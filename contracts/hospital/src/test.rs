@@ -4,18 +4,21 @@ use super::*;
 use soroban_sdk::{vec, Env, String};
 use soroban_sdk::testutils::{Address as _};
 
+fn setup () -> (HospitalContractClient<'static>, Address, Env, Address) {
+    let env = Env::default();
+    let admin = Address::generate(&env);
+    let contract_id: Address = env.register(HospitalContract, ());
+    let client: HospitalContractClient<'_> = HospitalContractClient::new(&env, &contract_id);
+
+    let result = client.initialize(&admin);
+    (client, admin, env, result)
+}
 
 #[test]
 fn test_hospital_contract() {
-    let env = Env::default();
-    let admin = Address::generate(&env);
 
-    // Initialize contract 
-    let contract_id = env.register(HospitalContract, ());
-    let client = HospitalContractClient::new(&env, &contract_id);
+  let (client, admin, env, result) = setup();
 
-    
-    let result = client.initialize(&admin);
     assert_eq!(result, admin);
 
     // test patient registration 
@@ -95,8 +98,71 @@ fn test_hospital_contract() {
     let patients = client.list_patients();
     assert_eq!(patients.len(), 1);
 
+    // Test listing doctors 
+    let doctors = client.list_doctors();
+    assert_eq!(doctors.len(), 1);
 
+    // Test getting the patient tests 
+    let patient_test = client.get_patients_tests(&patient_id);
+    assert_eq!(patient_test.len(), 1);
+    assert_eq!(patient_test.get(0).unwrap().id, test_id);
+
+
+    // Test patient setting to be inactive 
+    let inactive_patient = client.set_patient_active(&patient_id, &false);
+    assert_eq!(inactive_patient.active, false);
+
+    // Test setting doctor inactive 
+    let inactive_doctor = client.set_doctor_active(&doctor_id, &false);
+    assert_eq!(inactive_doctor.active, false);
+
+}
+
+
+#[test]
+#[should_panic(expected = "Patient is inactive")]
+fn test_inactive_patient() {
+    let (client, _, env,_) = setup();
+
+    env.mock_all_auths();
+    // Registering the patients 
+    let allergies = vec![&env, String::from_str(&env, "Penicillin")];
+    let patient_id = client.register_patient(
+        &String::from_str(&env,"Ayo"), 
+        &19800101,
+        &String::from_str(&env, "A+"), 
+        &allergies, 
+        &String::from_str(&env, "INS123YP7")
+        );
+
+
+    // Registering the doctor 
+
+    let doctor_id = client.register_doctor(
+        &String::from_str(&env, "Dr. Beulah"), 
+        &String::from_str(&env, "Cardiology"), 
+        &String::from_str(&env, "DOC789")
+    );
+
+
+    // Set patient to inactive 
+    client.set_patient_active(&patient_id, &false);
+
+    // Try to record 
+    let test_date = env.ledger().timestamp();
+    client.record_medical_test(
+        &patient_id, 
+        &doctor_id, 
+        &String::from_str(&env, "Blood pressure"), 
+        &test_date, 
+        &String::from_str(&env, "120/80, Normal"), 
+        &String::from_str(&env, "Patient should continue his medication")
+    );
 
 
 }
 
+// Quick class work
+// Test doctor is inactive 
+// Test for contract already initialized 
+// patient not registered

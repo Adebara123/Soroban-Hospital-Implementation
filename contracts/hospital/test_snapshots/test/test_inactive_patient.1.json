@@ -16,7 +16,7 @@
               "function_name": "register_patient",
               "args": [
                 {
-                  "string": "John Doe"
+                  "string": "Ayo"
                 },
                 {
                   "u64": 19800101
@@ -25,10 +25,14 @@
                   "string": "A+"
                 },
                 {
-                  "vec": []
+                  "vec": [
+                    {
+                      "string": "Penicillin"
+                    }
+                  ]
                 },
                 {
-                  "string": "INS12345"
+                  "string": "INS123YP7"
                 }
               ]
             }
@@ -47,7 +51,7 @@
               "function_name": "register_doctor",
               "args": [
                 {
-                  "string": "Dr. Jane Smith"
+                  "string": "Dr. Beulah"
                 },
                 {
                   "string": "Cardiology"
@@ -272,7 +276,7 @@
                                 "symbol": "name"
                               },
                               "val": {
-                                "string": "Dr. Jane Smith"
+                                "string": "Dr. Beulah"
                               }
                             },
                             {
@@ -339,7 +343,11 @@
                                 "symbol": "allergies"
                               },
                               "val": {
-                                "vec": []
+                                "vec": [
+                                  {
+                                    "string": "Penicillin"
+                                  }
+                                ]
                               }
                             },
                             {
@@ -371,7 +379,7 @@
                                 "symbol": "insurance_id"
                               },
                               "val": {
-                                "string": "INS12345"
+                                "string": "INS123YP7"
                               }
                             },
                             {
@@ -379,7 +387,7 @@
                                 "symbol": "name"
                               },
                               "val": {
-                                "string": "John Doe"
+                                "string": "Ayo"
                               }
                             }
                           ]
