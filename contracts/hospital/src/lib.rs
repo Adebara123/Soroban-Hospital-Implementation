@@ -260,7 +260,7 @@ impl HospitalContract {
     id: u64,
     name: String,
     specialization: String,
-    license_number: String
+    license_number: String,
    ) -> Doctor {
 
     Self::check_admin(&env);
@@ -305,10 +305,143 @@ impl HospitalContract {
    }
 
 
-   // 
+   // Medical Test management functions 
+
+   pub fn record_medical_test(
+    env: Env,
+    patient_id: u64,
+    doctor_id: u64,
+    test_type: String,
+    test_date: u64,
+    results: String,
+    notes: String,
+   ) -> u64 {
+
+    Self::check_admin(&env);
+
+    let patient: Patient = env.storage().instance().get(&DataKey::Patient(patient_id)).unwrap_or_else(|| panic!("Patient not found"));
+
+    let doctor: Doctor = env.storage().instance().get(&DataKey::Doctor(doctor_id)).unwrap_or_else(|| panic!("Doctor not found"));
+
+    if !patient.active {
+        panic!("Patient is inactive");
+    }
+
+    if !doctor.active {
+        panic!("Doctor is inactive");
+    }
+
+    let test_count: u64 = env.storage().instance().get(&DataKey::TestCount).unwrap_or(0);
+    let new_id = test_count + 1;
+
+    let test = MedicalTest {
+        id: new_id,
+        patient_id,
+        doctor_id,
+        test_date,
+        test_type,
+        results,
+        notes
+    };
+
+    env.storage().instance().set(&DataKey::MedicalTest(new_id), &test);
+    env.storage().instance().set(&DataKey::TestCount, &new_id);
+
+    let mut patient_tests: Vec<u64> = env.storage().instance().get(&DataKey::PatientTests(patient_id)).unwrap();
+    patient_tests.push_back(new_id);
+    env.storage().instance().set(&DataKey::PatientTests(patient_id), &patient_tests);
+
+    let mut doctor_tests: Vec<u64> = env.storage().instance().get(&DataKey::DoctorTests(doctor_id)).unwrap();
+    doctor_tests.push_back(new_id);
+    env.storage().instance().set(&DataKey::DoctorTests(doctor_id), &doctor_tests);
+
+    new_id
+   }
+
+   pub fn get_medical_test(env: Env, id: u64) -> MedicalTest {
+    match env.storage().instance().get(&DataKey::MedicalTest(id)) {
+        Some(test) => test,
+        None => panic!("Medical test not found"),
+    }
+   }
+
+   pub fn update_medical_test (
+    env: Env,
+    id: u64,
+    test_type: String,
+    test_date: u64,
+    results: String,
+    notes: String,
+   ) -> MedicalTest {
+    Self::check_admin(&env);
+
+    let mut test: MedicalTest = env.storage().instance().get(&DataKey::MedicalTest(id))
+        .unwrap_or_else(|| panic!("Medical test not found"));
+
+    test.test_type = test_type;
+    test.test_date = test_date;
+    test.results = results;
+    test.notes = notes;
+
+    env.storage().instance().set(&DataKey::MedicalTest(id), &test);
+
+    test
+   }
+
+
+   pub fn get_patients_tests(env: Env, patient_id: u64) -> Vec<MedicalTest> {
+
+        if !env.storage().instance().has(&DataKey::Patient(patient_id)) {
+            panic!("Patient not found");
+        }
+
+        let test_ids: Vec<u64> = env.storage().instance().get(&DataKey::PatientTests(patient_id)).unwrap();
+        let mut tests = Vec::new(&env);
+
+        for test_id in test_ids.iter() {
+            if let Some(test) = env.storage().instance().get(&DataKey::MedicalTest(test_id)) {
+                tests.push_back(test);
+            }
+        }
+
+        tests
+   }
+
+
+   pub fn get_doctor_tests(env: Env, doctor_id: u64) -> Vec<MedicalTest> {
+        
+        if !env.storage().instance().has(&DataKey::Doctor(doctor_id)) {
+            panic!("Doctor not found");
+        }
+
+        let test_ids: Vec<u64> = env.storage().instance().get(&DataKey::DoctorTests(doctor_id)).unwrap();
+        let mut tests = Vec::new(&env);
+
+        for test_id in test_ids.iter() {
+            if let Some(test)  = env.storage().instance().get(&DataKey::MedicalTest(test_id)) {
+                tests.push_back(test);
+            }
+        }
+
+        tests
+   }
+
+   pub fn list_medical_tests(env: Env) -> Vec<MedicalTest> {
+    let test_count: u64 = env.storage().instance().get(&DataKey::TestCount).unwrap_or(0);
+    let mut tests = Vec::new(&env);
+
+    for i in 1..=test_count {
+        if let Some(test) = env.storage().instance().get(&DataKey::MedicalTest(i)) {
+            tests.push_back(test);
+        }
+    }
+
+    tests
+
+   }
+
 
 }
-
 
 
 mod test;
